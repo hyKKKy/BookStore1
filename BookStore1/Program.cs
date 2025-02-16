@@ -6,8 +6,11 @@ namespace BookStore1
 {
     internal class Program
     {
+        public static int? currentUserId = null;
         static void Main(string[] args)
         {
+            ShowMenu();
+
             //showBooksbyName();
             //showBooksbyAuthor();
             //showBooksbyGender();
@@ -15,40 +18,188 @@ namespace BookStore1
             //deleteBookByName();
             //editBook();
             //sellBook();
-            writeOffBook();
+            //writeOffBook();
+            //singUp();
+            //reserve();
+            //logIn();
+            //сreateDiscount();
+            //addBookToDiscount();
+            //13
+        }
+
+        public static void ShowMenu()
+        {
+            bool exit = false;
+
+            while (!exit)
+            {
+
+                if (currentUserId == null)
+                {
+                    Console.WriteLine("Welcome to the book store! Log In/Sing Up first\n");
+                    Console.WriteLine("1. Sing Up");
+                    Console.WriteLine("2. Login");
+                    Console.WriteLine("3. Exit");
+                    string choice = Console.ReadLine();
+
+                    switch (choice)
+                    {
+                        case "1":
+                            singUp();
+                            Return();
+                            break;
+                        case "2":
+                            logIn();
+                            Return();
+                            break;
+                        case "3":
+                            exit = true;
+                            Console.WriteLine("Bye...");
+                            break;
+                        default:
+                            Console.WriteLine("Wrong choice!");
+                            break;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("\n--- Main Menu ---");
+                    Console.WriteLine("1. Logout");
+                    Console.WriteLine("2. Add book");
+                    Console.WriteLine("3. Delete book");
+                    Console.WriteLine("4. Edit book");
+                    Console.WriteLine("5. Sell book");
+                    Console.WriteLine("6. Write Off book");
+                    Console.WriteLine("7. Reserve book");
+                    Console.WriteLine("8. Create Discount");
+                    Console.WriteLine("9. Add book to Discount");
+                    Console.WriteLine("10. Show book by Name");
+                    Console.WriteLine("11. Show book by Author");
+                    Console.WriteLine("12. Show book by Gender");
+                    Console.WriteLine("13. Exit");
+                    Console.Write("Select an option: ");
+                    string choice = Console.ReadLine();
+
+                    switch (choice)
+                    {
+                        case "1":
+                            currentUserId = null;
+                            Console.WriteLine("You logged out.");
+                            Return();
+                            break;
+                        case "2":
+                            addBook();
+                            Return();
+                            break;
+                        case "3":
+                            deleteBookByName();
+                            Return();
+                            break;
+                        case "4":
+                            editBook();
+                            Return();
+                            break;
+                        case "5":
+                            sellBook();
+                            Return();
+                            break;
+                        case "6":
+                            writeOffBook();
+                            Return();
+                            break;
+                        case "7":
+                            reserve();
+                            Return();
+                            break;
+                        case "8":
+                            сreateDiscount();
+                            Return();
+                            break;
+                        case "9":
+                            addBookToDiscount();
+                            Return();
+                            break;
+                        case "10":
+                            showBooksbyName();
+                            Return();
+                            break;
+                        case "11":
+                            showBooksbyAuthor();
+                            Return();
+                            break;
+                        case "12":
+                            showBooksbyGender();
+                            Return();
+                            break;
+                        case "13":
+                            exit = true;
+                            currentUserId = null;
+                            Console.WriteLine("Exiting application...");
+                            break;
+                        default:
+                            Console.WriteLine("Invalid option. Please try again.");
+                            Return();
+                            break;
+                    }
+                }
+            }
+        }
+
+        private static void Return()
+        {
+            Console.WriteLine("\nPress 'ESC' to return to the main menu...");
+            while (Console.ReadKey(true).Key != ConsoleKey.Escape) { }
+            Console.Clear();
         }
 
         public static void showBooksbyName()
         {
             using (BookStore1Context db = new())
             {
-                string userInput;
                 Console.WriteLine("Write a name of book: ");
-                userInput = Console.ReadLine();
+                string userInput = Console.ReadLine();
 
-                var items = db.Books
-                                    .Where(i => i.Name.Contains(userInput)) 
-                                    .Include(i => i.Author) 
-                                    .Include(i => i.Publishing) 
-                                    .Include(i => i.Gender) 
-                                    .ToList();
-                if (items.Any()) 
+                var items = (from books in db.Books
+                            join auth in db.Authors on books.AuthorId equals auth.Id
+                            join gender in db.Genders on books.GenderId equals gender.Id
+                            join publishing in db.Publishings on books.PublishingId equals publishing.Id
+                            where books.Name == userInput
+                            select new
+                            {
+                                b_name = books.Name,
+                                b_authorName = auth.Name,
+                                b_authorSurname = auth.Surname,
+                                b_gender = gender.Name,
+                                b_pages = books.Pages,
+                                b_price = books.Price,
+                                b_publ = publishing.Name,
+                                b_continue = books.ContinueTo,
+                                b_id = books.Id
+                            }).ToList();
+
+                if (items.Any())
                 {
-                    foreach (var item in items)
+                    foreach (var i in items)
                     {
                         Console.WriteLine();
-                        Console.WriteLine($"Name: {item.Name}");
-                        Console.WriteLine($"Author: {item.Author.Name} {item.Author.Surname}");
-                        Console.WriteLine($"Publishing: {item.Publishing.Name}");
-                        Console.WriteLine($"Pages: {item.Pages}");
-                        Console.WriteLine($"Price: {item.Price}");
-                        Console.WriteLine($"Amount: {item.Amount}");
-                        Console.WriteLine($"Genre: {item.Gender.Name}");
-                        if (item.ContinueTo.HasValue)
+                        Console.WriteLine($"Book: {i.b_name}");
+                        Console.WriteLine($"Author: {i.b_authorName} {i.b_authorSurname}");
+                        Console.WriteLine($"Genre: {i.b_gender}");
+                        Console.WriteLine($"Pages: {i.b_pages}");
+                        Console.WriteLine($"Price: {i.b_price}");
+                        Console.WriteLine($"Publishing: {i.b_publ}");
+
+                        if (i.b_continue.HasValue)
                         {
-                            var continuation = db.Books.FirstOrDefault(b => b.Id == item.ContinueTo);
-                            Console.WriteLine($"Continuation: {continuation?.Name ?? "No continuation"}");
-                        } 
+                            var previousBook = db.Books.FirstOrDefault(b => b.Id == i.b_continue);
+                            Console.WriteLine($"Continue to: {previousBook?.Name ?? "Unknown"}");
+                        }
+
+                        var nextBook = db.Books.FirstOrDefault(b => b.ContinueTo == i.b_id);
+                        if (nextBook != null)
+                        {
+                            Console.WriteLine($"This book is continued in: {nextBook.Name}");
+                        }
                     }
                 }
                 else
@@ -69,7 +220,7 @@ namespace BookStore1
                 Console.WriteLine("Write an author surname: ");
                 userInputsurname = Console.ReadLine();
 
-                var items = from books in db.Books
+                var items = (from books in db.Books
                             join auth in db.Authors on books.AuthorId equals auth.Id
                             join gender in db.Genders on books.GenderId equals gender.Id
                             join publishing in db.Publishings on books.PublishingId equals publishing.Id
@@ -82,8 +233,10 @@ namespace BookStore1
                                 b_gender = gender.Name,
                                 b_pages = books.Pages,
                                 b_price = books.Price,
-                                b_publ = publishing.Name
-                            };
+                                b_publ = publishing.Name,
+                                b_continue = books.ContinueTo,
+                                b_id = books.Id
+                            }).ToList();
                 if (items.Any()) 
                 {
                     foreach (var i in items)
@@ -94,8 +247,20 @@ namespace BookStore1
                         Console.WriteLine($"Genre: {i.b_gender}");
                         Console.WriteLine($"Pages: {i.b_pages}");
                         Console.WriteLine($"Price: {i.b_price}");
-                        Console.WriteLine($"Publishing: {i.b_publ}"); 
-                    }
+                        Console.WriteLine($"Publishing: {i.b_publ}");
+
+                        if (i.b_continue.HasValue)
+                        {
+                            var previousBook = db.Books.FirstOrDefault(b => b.Id == i.b_continue);
+                            Console.WriteLine($"Continue to: {previousBook?.Name ?? "Unknown"}");
+                        }
+
+                        var nextBook = db.Books.FirstOrDefault(b => b.ContinueTo == i.b_id);
+                        if (nextBook != null)
+                        {
+                            Console.WriteLine($"This book is continued in: {nextBook.Name}");
+                        }
+                    } 
                 }
                 else
                 {
@@ -215,6 +380,24 @@ namespace BookStore1
                     db.SaveChanges();
                 }
 
+                int? previousBookId = null;
+                Console.WriteLine("Is this book a continue of another? (Press Enter to skip if not): ");
+                string? previousBookName = Console.ReadLine();
+
+                if (!string.IsNullOrWhiteSpace(previousBookName))
+                {
+                    var previousBook = db.Books.FirstOrDefault(b => b.Name == previousBookName);
+                    if (previousBook != null)
+                    {
+                        previousBookId = previousBook.Id;
+                        Console.WriteLine($"This book is a continue of : {previousBook.Name}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Previous book not found.");
+                    }
+                }
+
                 var newBook = new Book
                 {
                     Name = name,
@@ -224,7 +407,8 @@ namespace BookStore1
                     Pages = pages,
                     Price = price,
                     Selfprice = selfprice,
-                    PublishingId = publishing.Id
+                    PublishingId = publishing.Id,
+                    ContinueTo = previousBookId
                 };
 
                 db.Books.Add(newBook);
@@ -425,6 +609,7 @@ namespace BookStore1
         {
             using (BookStore1Context db = new())
             {
+                try { 
                 string userLogin;
                 Console.WriteLine("Create login: ");
                 userLogin = Console.ReadLine();
@@ -436,7 +621,7 @@ namespace BookStore1
                     return;
                 }
 
-                Console.Write("Enter password: ");
+                Console.Write("Enter password (8 symbols): ");
                 string password = Console.ReadLine();
 
                 var newUser = new User
@@ -449,6 +634,11 @@ namespace BookStore1
                 db.SaveChanges();
 
                 Console.WriteLine("Congratulations! You have registered");
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }  
             }
         }
 
@@ -477,8 +667,151 @@ namespace BookStore1
                     Console.WriteLine("Wrong password!");
                     return;
                 }
+                currentUserId = user.Id;
                 Console.WriteLine($"Welcome {user.Login}!");
             }
         }
+
+        public static void reserve()
+        {
+            using (BookStore1Context db = new())
+            {
+                Console.Write("Enter your username: ");
+                string login = Console.ReadLine();
+
+                var user = db.Users.FirstOrDefault(u => u.Login == login);
+                if (user == null)
+                {
+                    Console.WriteLine("User not found.");
+                    return;
+                }
+
+                Console.Write("Enter book name: ");
+                string bookName = Console.ReadLine();
+
+                var book = db.Books.FirstOrDefault(b => b.Name == bookName);
+                if (book == null)
+                {
+                    Console.WriteLine("Book not found.");
+                    return;
+                }
+
+                Console.Write($"Available books: {book.Amount}. Enter amount to reserve: ");
+                if (!int.TryParse(Console.ReadLine(), out int amount) || amount <= 0)
+                {
+                    Console.WriteLine("Wrong amount.");
+                    return;
+                }
+
+                if (book.Amount < amount)
+                {
+                    Console.WriteLine("Not enough books.");
+                    return;
+                }
+
+                book.Amount -= amount;
+
+                var reservation = new Reserved
+                {
+                    UserId = user.Id,
+                    BookId = book.Id,
+                    Amount = amount,
+                    ReserveDate = DateOnly.FromDateTime(DateTime.Now) 
+                };
+
+                db.Reserveds.Add(reservation);
+                db.SaveChanges();
+
+                Console.WriteLine($"Book '{book.Name}' reserved successfully for {user.Login} with amount {amount}.");
+            }
+        }
+
+        public static void сreateDiscount()
+        {
+            using (BookStore1Context db = new())
+            {
+                Console.Write("Enter discount value %: ");
+                int.TryParse(Console.ReadLine(), out int discountValue);
+
+                Console.Write("Enter start date (yyyy-MM-dd): ");
+                DateOnly.TryParse(Console.ReadLine(), out DateOnly startDate);
+               
+                Console.Write("Enter end date (yyyy-MM-dd): ");
+                if (!DateOnly.TryParse(Console.ReadLine(), out DateOnly endDate) || endDate < startDate)
+                {
+                    Console.WriteLine("Error");
+                    return;
+                }
+
+                var discount = new Discount
+                {
+                    Value = discountValue,
+                    StartDate = startDate,
+                    EndDate = endDate
+                };
+
+                db.Discounts.Add(discount);
+                db.SaveChanges();
+
+                Console.WriteLine($"Discount {discount.Id} created successfully!");
+            }
+        }
+
+        public static void addBookToDiscount()
+        {
+            using (BookStore1Context db = new())
+            {
+                var discounts = db.Discounts.ToList();
+                foreach (var d in discounts)
+                {
+                    Console.WriteLine($"Discount ID - {d.Id}; Discount value - {d.Value}");
+                }
+
+                Console.Write("Enter discount ID: ");
+                if (!int.TryParse(Console.ReadLine(), out int discountId))
+                {
+                    Console.WriteLine("Invalid ID.");
+                    return;
+                }
+
+                var discount = db.Discounts.FirstOrDefault(d => d.Id == discountId);
+                if (discount == null)
+                {
+                    Console.WriteLine("Discount not found.");
+                    return;
+                }
+
+                Console.Write("Enter book name to add to discount: ");
+                string bookName = Console.ReadLine();
+                var book = db.Books.FirstOrDefault(b => b.Name == bookName);
+
+                if (book == null)
+                {
+                    Console.WriteLine("Book not found.");
+                    return;
+                }
+
+                var existingBookDiscount = db.BookDiscounts
+                    .FirstOrDefault(bd => bd.BookId == book.Id && bd.DiscountId == discount.Id);
+
+                if (existingBookDiscount != null)
+                {
+                    Console.WriteLine("This book is already in the discount.");
+                    return;
+                }
+
+                var bookDiscount = new BookDiscount
+                {
+                    BookId = book.Id,
+                    DiscountId = discount.Id
+                };
+
+                db.BookDiscounts.Add(bookDiscount);
+                db.SaveChanges();
+
+                Console.WriteLine($"Book '{book.Name}' added to discount ID {discount.Id}.");
+            }
+        }
     }
+
 }
