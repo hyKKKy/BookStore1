@@ -9,7 +9,7 @@ namespace BookStore1
         public static int? currentUserId = null;
         static void Main(string[] args)
         {
-            ShowMenu();
+            Menu();
 
             //showBooksbyName();
             //showBooksbyAuthor();
@@ -27,7 +27,7 @@ namespace BookStore1
             //13
         }
 
-        public static void ShowMenu()
+        public static void Menu()
         {
             bool exit = false;
 
@@ -516,43 +516,35 @@ namespace BookStore1
             using (BookStore1Context db = new())
             {
                 Console.WriteLine("Enter the name of the book you want to buy: ");
-                string bookName = Console.ReadLine();
+                string bookName = Console.ReadLine()?.Trim();
 
                 var book = db.Books.FirstOrDefault(b => b.Name == bookName);
 
-                if (book != null)
-                {
-                    Console.WriteLine($"Available amount of book {book.Name} - {book.Amount}");
-                    Console.WriteLine("How many books you want to buy? -  ");
-                    if (int.TryParse(Console.ReadLine(), out int quantity) && quantity > 0)
-                    {
-                        if (book.Amount >= quantity)
-                        {
-                            book.Amount -= quantity;
-                            db.SaveChanges();
-                            Console.WriteLine($"Successfully sold {quantity} copies of '{book.Name}'. Remaining: {book.Amount}");
-
-                            if (book.Amount == 0)
-                            {
-                                db.Books.Remove(book);
-                                db.SaveChanges();
-                                Console.WriteLine($"'{book.Name}' is now out of stock and removed from our store.");
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine("Not enough books available.");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("Wrong input.");
-                    }
-                }
-                else
+                if (book == null)
                 {
                     Console.WriteLine($"Book '{bookName}' was not found.");
+                    return;
                 }
+
+                Console.WriteLine($"Available amount of book {book.Name} - {book.Amount}");
+                Console.Write("How many books you want to buy? - ");
+
+                if (!int.TryParse(Console.ReadLine(), out int quantity) || quantity <= 0)
+                {
+                    Console.WriteLine("Invalid input. Please enter a positive number.");
+                    return;
+                }
+
+                if (book.Amount < quantity)
+                {
+                    Console.WriteLine("Not enough books available.");
+                    return;
+                }
+
+                book.Amount -= quantity;
+                Console.WriteLine($"Successfully sold {quantity} copies of '{book.Name}'. Remaining: {book.Amount}");
+
+                db.SaveChanges();
             }
         }
 
@@ -561,49 +553,46 @@ namespace BookStore1
             using (BookStore1Context db = new())
             {
                 Console.WriteLine("Enter the name of the book you want to write off: ");
-                string bookName = Console.ReadLine();
+                string bookName = Console.ReadLine()?.Trim();
 
                 var book = db.Books.FirstOrDefault(b => b.Name == bookName);
 
-                if (book != null)
+                if (book == null)
                 {
-                    Console.WriteLine($"Available copies: {book.Amount}");
-                    Console.WriteLine("Enter the number of copies to write off: ");
-                    if (int.TryParse(Console.ReadLine(), out int quantity) && quantity > 0)
-                    {
-                        if (book.Amount >= quantity)
-                        {
-                            book.Amount -= quantity;
-
-                            var writeOff = new WrittenOff
-                            {
-                                BookId = book.Id,
-                                Amount = quantity,
-                                WrittenOffDate = DateOnly.FromDateTime(DateTime.Now)
-                            };
-                            db.WrittenOffs.Add(writeOff);
-
-                            db.SaveChanges();
-                            Console.WriteLine($"Successfully written off {quantity} copies of '{book.Name}'. Remaining: {book.Amount}");
-                            
-                            if (book.Amount == 0)
-                            {
-                                db.Books.Remove(book);
-                                db.SaveChanges();
-                                Console.WriteLine($"'{book.Name}' has been written off fully!");
-                            } 
-                        }
-                        else
-                            Console.WriteLine("Not enough books for write off.");
-                        
-                    }
-                    else
-                        Console.WriteLine("Invalid quantity.");
-                }
-                else
                     Console.WriteLine($"Book '{bookName}' was not found.");
+                    return;
+                }
+
+                Console.WriteLine($"Available books: {book.Amount}");
+                Console.Write("Enter the number of books to write off: ");
+
+                if (!int.TryParse(Console.ReadLine(), out int quantity) || quantity <= 0)
+                {
+                    Console.WriteLine("Invalid quantity.");
+                    return;
+                }
+
+                if (book.Amount < quantity)
+                {
+                    Console.WriteLine("Not enough books.");
+                    return;
+                }
+
+                book.Amount -= quantity;
+
+                var writeOff = new WrittenOff
+                {
+                    BookId = book.Id,
+                    Amount = quantity,
+                    WrittenOffDate = DateOnly.FromDateTime(DateTime.Now)
+                };
+                db.WrittenOffs.Add(writeOff);
+
+                db.SaveChanges();
+                Console.WriteLine($"Successfully written off {quantity} copies of '{book.Name}'. Remaining: {book.Amount}");
             }
         }
+
 
         public static void singUp()
         {
