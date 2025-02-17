@@ -531,13 +531,13 @@ namespace BookStore1
 
                 if (!int.TryParse(Console.ReadLine(), out int quantity) || quantity <= 0)
                 {
-                    Console.WriteLine("Invalid input. Please enter a positive number.");
+                    Console.WriteLine("Invalid input.");
                     return;
                 }
 
                 if (book.Amount < quantity)
                 {
-                    Console.WriteLine("Not enough books available.");
+                    Console.WriteLine("Not enough books.");
                     return;
                 }
 
@@ -592,7 +592,6 @@ namespace BookStore1
                 Console.WriteLine($"Successfully written off {quantity} copies of '{book.Name}'. Remaining: {book.Amount}");
             }
         }
-
 
         public static void singUp()
         {
